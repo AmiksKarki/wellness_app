@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:my_wellness_app/service/auth_service.dart';
+import 'package:my_wellness_app/core/route_config/route_name.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -9,10 +12,71 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  final AuthService _authService = AuthService();
+  User? _currentUser;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentUser = _authService.currentUser;
+  }
+
+  void _logout() async {
+    try {
+      await _authService.signOut();
+      // Navigation will be handled by AuthWrapper automatically
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error signing out: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _forgotPassword() async {
+    if (_currentUser?.email != null) {
+      try {
+        await _authService.sendPasswordResetEmail(email: _currentUser!.email!);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Password reset email sent successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  String _getUserDisplayName() {
+    if (_currentUser?.displayName != null && _currentUser!.displayName!.isNotEmpty) {
+      return _currentUser!.displayName!;
+    } else if (_currentUser?.email != null) {
+      // Extract name from email (everything before @)
+      String emailPrefix = _currentUser!.email!.split('@')[0];
+      // Capitalize first letter
+      return emailPrefix.substring(0, 1).toUpperCase() + emailPrefix.substring(1);
+    }
+    return 'User';
+  }
+
+  String _getUserEmail() {
+    return _currentUser?.email ?? 'No email';
+  }
+
   final List<Map<String, dynamic>> _makeItYoursOptions = [
     {
       'title': 'Content preferences',
       'icon': Icons.book,
+      'onTap': 'content_preferences',
     },
   ];
 
@@ -20,14 +84,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     {
       'title': 'Theme',
       'icon': Icons.edit,
+      'onTap': null,
     },
     {
       'title': 'Forgot Password',
       'icon': Icons.lock,
+      'onTap': 'forgot_password',
     },
     {
       'title': 'Logout',
       'icon': Icons.logout,
+      'onTap': 'logout',
     },
   ];
 
@@ -100,7 +167,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Amiks Karki',
+                          _getUserDisplayName(),
                           style: TextStyle(
                             fontSize: 20.sp,
                             fontWeight: FontWeight.bold,
@@ -109,7 +176,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         SizedBox(height: 4.h),
                         Text(
-                          'karkiamiks02@gmail.com',
+                          _getUserEmail(),
                           style: TextStyle(
                             fontSize: 14.sp,
                             color: Colors.grey,
@@ -134,35 +201,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
               SizedBox(height: 16.h),
               ..._makeItYoursOptions.map((option) => Container(
                 margin: EdgeInsets.only(bottom: 12.h),
-                child: Container(
-                  padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 20.w),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2A2A2A),
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        option['icon'],
-                        color: Colors.white,
-                        size: 20.w,
-                      ),
-                      SizedBox(width: 16.w),
-                      Text(
-                        option['title'],
-                        style: TextStyle(
-                          fontSize: 16.sp,
+                child: GestureDetector(
+                  onTap: () {
+                    if (option['onTap'] == 'content_preferences') {
+                      Navigator.pushNamed(context, RoutesName.contentPreferencesScreen);
+                    }
+                  },
+                  child: Container(
+                    padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 20.w),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2A2A2A),
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          option['icon'],
                           color: Colors.white,
-                          fontWeight: FontWeight.w500,
+                          size: 20.w,
                         ),
-                      ),
-                      const Spacer(),
-                      Icon(
-                        Icons.arrow_forward_ios,
-                        color: Colors.grey,
-                        size: 16.w,
-                      ),
-                    ],
+                        SizedBox(width: 16.w),
+                        Text(
+                          option['title'],
+                          style: TextStyle(
+                            fontSize: 16.sp,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const Spacer(),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          color: Colors.grey,
+                          size: 16.w,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               )).toList(),
@@ -182,12 +256,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 margin: EdgeInsets.only(bottom: 12.h),
                 child: GestureDetector(
                   onTap: () {
-                    if (option['title'] == 'Logout') {
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        '/',
-                        (route) => false,
-                      );
+                    if (option['onTap'] == 'logout') {
+                      _logout();
+                    } else if (option['onTap'] == 'forgot_password') {
+                      _forgotPassword();
                     }
                   },
                   child: Container(

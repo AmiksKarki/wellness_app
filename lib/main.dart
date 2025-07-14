@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'screens/login_screen.dart';
-import 'screens/signup_screen.dart';
-import 'screens/user_preference_screen.dart';
-import 'screens/dashboard_screen.dart';
-import 'screens/profile_screen.dart';
-import 'screens/quotes_detail_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:my_wellness_app/core/route_config/route_name.dart';
+import 'core/route_config/route_config.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(const WellnessApp());
 }
 
@@ -70,15 +69,17 @@ class WellnessApp extends StatelessWidget {
             ),
             hoverColor: Colors.transparent,
           ),
-          initialRoute: '/',
-          routes: {
-            '/': (context) => const LoginScreen(),
-            '/signup': (context) => const SignUpScreen(),
-            '/preferences': (context) => const UserPreferenceScreen(),
-            '/dashboard': (context) => const DashboardScreen(),
-            '/profile': (context) => const ProfileScreen(),
-            '/quotes': (context) => const QuotesDetailScreen(),
-          },
+          onGenerateRoute: RouteConfig.generateRoute,
+          initialRoute: RoutesName.defaultScreen,
+          // initialRoute: '/',
+          // routes: {
+          //   '/': (context) => const LoginScreen(),
+          //   '/signup': (context) => const SignUpScreen(),
+          //   '/preferences': (context) => const UserPreferenceScreen(),
+          //   '/dashboard': (context) => const DashboardScreen(),
+          //   '/profile': (context) => const ProfileScreen(),
+          //   '/quotes': (context) => const QuotesDetailScreen(),
+          // },
         );
       },
     );

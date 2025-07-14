@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:my_wellness_app/core/route_config/route_name.dart';
 
 class UserPreferenceScreen extends StatefulWidget {
   const UserPreferenceScreen({super.key});
@@ -10,14 +11,14 @@ class UserPreferenceScreen extends StatefulWidget {
 
 class _UserPreferenceScreenState extends State<UserPreferenceScreen> {
   final List<String> _preferences = [
-    'Meditation',
-    'Exercise',
-    'Nutrition',
-    'Sleep',
-    'Mindfulness',
-    'Yoga',
+    'Meditation & Mindfulness',
+    'Exercise & Fitness',
+    'Nutrition & Diet',
+    'Sleep & Recovery',
     'Mental Health',
     'Stress Management',
+    'Yoga & Stretching',
+    'Motivational Quotes',
   ];
 
   final List<String> _selectedPreferences = [];
@@ -25,10 +26,15 @@ class _UserPreferenceScreenState extends State<UserPreferenceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Your Preferences'),
+        backgroundColor: Colors.black,
+        title: Text(
+          'Your Preferences',
+          style: TextStyle(color: Colors.white),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -109,12 +115,23 @@ class _UserPreferenceScreenState extends State<UserPreferenceScreen> {
               ElevatedButton(
                 onPressed: _selectedPreferences.isNotEmpty
                     ? () {
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    '/dashboard',
-                        (route) => false,
-                  );
-                }
+                        // TODO: Save user preferences to Firebase/local storage
+                        
+                        // Show success message
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Preferences saved! Please sign in to continue.'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                        
+                        // Navigate to login screen
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          RoutesName.loginScreen,
+                          (route) => false,
+                        );
+                      }
                     : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,

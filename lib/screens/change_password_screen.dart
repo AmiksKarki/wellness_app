@@ -1,42 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:my_wellness_app/service/auth_service.dart';
-import 'package:my_wellness_app/core/route_config/route_name.dart';
 
-class SignUpScreen extends StatefulWidget {
-  const SignUpScreen({super.key});
+class ChangePasswordScreen extends StatefulWidget {
+  const ChangePasswordScreen({super.key});
 
   @override
-  State<SignUpScreen> createState() => _SignUpScreenState();
+  State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
 }
 
-class _SignUpScreenState extends State<SignUpScreen> {
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
+  final _currentPasswordController = TextEditingController();
+  final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _authService = AuthService();
   bool _isLoading = false;
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  void _showErrorDialog(String message) {
+  void _showDialog(String title, String message, {bool isSuccess = false}) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Color(0xFF2A2A2A),
-        title: Text('Error', style: TextStyle(color: Colors.white)),
+        title: Text(title, style: TextStyle(color: Colors.white)),
         content: Text(message, style: TextStyle(color: Colors.grey)),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              Navigator.pop(context);
+              if (isSuccess) {
+                Navigator.pop(context); // Go back to previous screen
+              }
+            },
             child: Text('OK', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -44,49 +46,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  void _showSuccessDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Color(0xFF2A2A2A),
-        title: Text('Success', style: TextStyle(color: Colors.white)),
-        content: Text('Account created successfully! Let\'s personalize your experience.', style: TextStyle(color: Colors.grey)),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pushReplacementNamed(context, RoutesName.userPreferenceScreen);
-            },
-            child: Text('Continue', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _signUp() async {
-    final name = _nameController.text.trim();
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
+  void _changePassword() async {
+    final currentPassword = _currentPasswordController.text.trim();
+    final newPassword = _newPasswordController.text.trim();
     final confirmPassword = _confirmPasswordController.text.trim();
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
-      _showErrorDialog('Please fill in all fields');
+    if (currentPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty) {
+      _showDialog('Error', 'Please fill in all fields');
       return;
     }
 
-    if (!AuthService.isValidEmail(email)) {
-      _showErrorDialog('Please enter a valid email address');
+    if (!AuthService.isValidPassword(newPassword)) {
+      _showDialog('Error', 'New password must be at least 8 characters long');
       return;
     }
 
-    if (!AuthService.isValidPassword(password)) {
-      _showErrorDialog('Password must be at least 8 characters long');
+    if (!AuthService.doPasswordsMatch(newPassword, confirmPassword)) {
+      _showDialog('Error', 'New passwords do not match');
       return;
     }
 
-    if (!AuthService.doPasswordsMatch(password, confirmPassword)) {
-      _showErrorDialog('Passwords do not match');
+    if (currentPassword == newPassword) {
+      _showDialog('Error', 'New password must be different from current password');
       return;
     }
 
@@ -95,18 +76,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
     });
 
     try {
-      await _authService.signUpWithEmailAndPassword(
-        email: email,
-        password: password,
-        displayName: name,
+      await _authService.updatePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
       );
       
-      // Sign out the user immediately after registration
-      await _authService.signOut();
-      
-      _showSuccessDialog();
+      _showDialog(
+        'Success',
+        'Password changed successfully!',
+        isSuccess: true,
+      );
     } catch (e) {
-      _showErrorDialog(e.toString());
+      _showDialog('Error', e.toString());
     } finally {
       setState(() {
         _isLoading = false;
@@ -117,11 +98,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Sign Up'),
+        backgroundColor: Colors.black,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Change Password',
+          style: TextStyle(color: Colors.white),
         ),
       ),
       body: SafeArea(
@@ -132,7 +118,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Create Account',
+                'Update Password',
                 style: TextStyle(
                   fontSize: 32.sp,
                   fontWeight: FontWeight.bold,
@@ -142,7 +128,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
               SizedBox(height: 8.h),
               Text(
-                'Start your wellness journey today',
+                'Enter your current password and choose a new one.',
                 style: TextStyle(
                   fontSize: 16.sp,
                   color: Colors.grey,
@@ -151,26 +137,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
               SizedBox(height: 48.h),
               TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  hintText: 'Full Name',
-                  prefixIcon: Icon(Icons.person_outline),
-                ),
-              ),
-              SizedBox(height: 16.h),
-              TextField(
-                controller: _emailController,
-                decoration: const InputDecoration(
-                  hintText: 'Email',
-                  prefixIcon: Icon(Icons.email_outlined),
-                ),
-              ),
-              SizedBox(height: 16.h),
-              TextField(
-                controller: _passwordController,
+                controller: _currentPasswordController,
                 obscureText: true,
                 decoration: const InputDecoration(
-                  hintText: 'Password',
+                  hintText: 'Current Password',
+                  prefixIcon: Icon(Icons.lock_outline),
+                ),
+              ),
+              SizedBox(height: 16.h),
+              TextField(
+                controller: _newPasswordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  hintText: 'New Password (min 8 characters)',
                   prefixIcon: Icon(Icons.lock_outline),
                 ),
               ),
@@ -179,13 +158,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 controller: _confirmPasswordController,
                 obscureText: true,
                 decoration: const InputDecoration(
-                  hintText: 'Confirm Password',
+                  hintText: 'Confirm New Password',
                   prefixIcon: Icon(Icons.lock_outline),
                 ),
               ),
               SizedBox(height: 24.h),
               ElevatedButton(
-                onPressed: _isLoading ? null : _signUp,
+                onPressed: _isLoading ? null : _changePassword,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: Colors.black,
@@ -204,25 +183,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                     )
                   : Text(
-                      'Create Account',
+                      'Update Password',
                       style: TextStyle(
                         fontSize: 16.sp,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-              ),
-              SizedBox(height: 16.h),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: Text(
-                  'Already have an account? Sign In',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 14.sp,
-                  ),
-                ),
               ),
             ],
           ),

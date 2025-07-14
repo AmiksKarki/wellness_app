@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:my_wellness_app/core/route_config/route_name.dart';
 import 'package:my_wellness_app/service/auth_service.dart';
-import 'package:my_wellness_app/service/preference_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -13,29 +12,6 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final AuthService _authService = AuthService();
-  final PreferenceService _preferenceService = PreferenceService();
-  
-  // Mock user preferences - in real app, this would come from user's saved preferences
-  final List<String> _userPreferences = [
-    'Meditation & Mindfulness',
-    'Exercise & Fitness',
-    'Mental Health',
-  ];
-  
-  late Map<String, String> _todaysQuote;
-  late List<Map<String, String>> _personalizedHealthTips;
-  
-  @override
-  void initState() {
-    super.initState();
-    _loadPersonalizedContent();
-  }
-  
-  void _loadPersonalizedContent() {
-    // Get personalized quote and health tips based on user preferences
-    _todaysQuote = _preferenceService.getTodaysQuote(_userPreferences);
-    _personalizedHealthTips = _preferenceService.getHealthTipsForPreferences(_userPreferences);
-  }
   
   final List<Map<String, dynamic>> _quoteCategories = [
     {
@@ -53,6 +29,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     {
       'title': 'Love',
       'icon': Icons.favorite_border,
+    },
+  ];
+
+  final List<Map<String, dynamic>> _healthTips = [
+    {
+      'title': 'Breathe to Reset',
+      'icon': Icons.air,
     },
   ];
 
@@ -254,7 +237,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '"${_todaysQuote['quote']}"',
+                        '"Your wellness is an investment, not an expense."',
                         style: TextStyle(
                           fontSize: 16.sp,
                           color: Colors.white,
@@ -264,7 +247,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       SizedBox(height: 8.h),
                       Text(
-                        '- ${_todaysQuote['author']}',
+                        '- Author Name',
                         style: TextStyle(
                           fontSize: 13.sp,
                           color: Colors.grey,
@@ -340,7 +323,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                     SizedBox(height: 12.h),
-                    ..._personalizedHealthTips.take(3).map((tip) => Container(
+                    ..._healthTips.map((tip) => Container(
                       margin: EdgeInsets.only(bottom: 8.h),
                       child: Container(
                         padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
@@ -351,37 +334,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         child: Row(
                           children: [
                             Icon(
-                              Icons.air,
+                              tip['icon'],
                               color: Colors.white,
                               size: 18.w,
                             ),
                             SizedBox(width: 12.w),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    tip['title'] ?? '',
-                                    style: TextStyle(
-                                      fontSize: 15.sp,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  if (tip['description'] != null && tip['description']!.isNotEmpty)
-                                    Padding(
-                                      padding: EdgeInsets.only(top: 4.h),
-                                      child: Text(
-                                        tip['description']!,
-                                        style: TextStyle(
-                                          fontSize: 12.sp,
-                                          color: Colors.grey,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                ],
+                            Text(
+                              tip['title'],
+                              style: TextStyle(
+                                fontSize: 15.sp,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                             const Spacer(),
